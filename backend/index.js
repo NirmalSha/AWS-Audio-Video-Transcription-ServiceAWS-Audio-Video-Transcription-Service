@@ -1,25 +1,32 @@
+require('dotenv').config();  
+
 const express = require('express');
 const AWS = require('aws-sdk');
 const multer = require('multer');
 const cors = require('cors');
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// AWS Configuration
-AWS.config.update({ region: 'us-east-1' });
+
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
+
 const s3 = new AWS.S3();
 
-const BUCKET = 'audio-upload-bucket-aws-transcribe';
-const OUTPUT_BUCKET = 'transcript-output-bucket-aws-transcribe';
+const BUCKET = process.env.BUCKET;
+const OUTPUT_BUCKET = process.env.OUTPUT_BUCKET;
 
-// Multer setup
+
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Upload endpoint
+
 app.post('/upload', upload.single('file'), async (req, res) => {
   try {
     const username = req.body.username;
@@ -47,13 +54,13 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// Transcript fetch & download
+
 app.get('/transcript/:username/:filename', async (req, res) => {
   const { filename } = req.params;
 
   const safeFilename = filename.replace(/\s+/g, '_');
   const txtFilename = safeFilename.replace(/\.(mp3|mp4)$/i, '.txt');
-  const key = `${txtFilename}`;
+  const key = txtFilename;
 
   try {
     const data = await s3.getObject({
@@ -75,3 +82,4 @@ app.get('/transcript/:username/:filename', async (req, res) => {
 app.listen(port, () => {
   console.log(`Backend running on port ${port}`);
 });
+
