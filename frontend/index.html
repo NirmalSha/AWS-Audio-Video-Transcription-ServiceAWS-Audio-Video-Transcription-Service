@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload and Get Transcript</title>
+</head>
+<body>
+  <h2>Upload File</h2>
+  <form id="uploadForm">
+    Username: <input type="text" id="username" required><br><br>
+    File: <input type="file" id="fileInput" accept=".mp3,.mp4" required><br><br>
+    <button type="submit">Upload</button>
+  </form>
+
+  <h2>Get Transcript</h2>
+  <form id="getForm">
+    Username: <input type="text" id="getUsername" required><br><br>
+    File name: <input type="text" id="getFile" placeholder="e.g. myaudio.mp4" required><br><br>
+    <button type="submit">Fetch Transcript</button>
+  </form>
+
+  <pre id="output"></pre>
+  <a id="downloadLink" style="display:none;" download>Download Transcript</a>
+
+  <script>
+    const backendUrl = "http://3.89.124.64:3001";
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append('username', document.getElementById('username').value);
+      formData.append('file', document.getElementById('fileInput').files[0]);
+
+      const res = await fetch(`${backendUrl}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await res.text();
+      document.getElementById('output').innerText = result;
+      document.getElementById('downloadLink').style.display = 'none';
+    });
+
+    document.getElementById('getForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('getUsername').value;
+      const filename = document.getElementById('getFile').value;
+
+      const res = await fetch(`${backendUrl}/transcript/${username}/${filename}`);
+      const text = await res.text();
+      document.getElementById('output').innerText = text;
+
+      if (res.ok) {
+        // Create downloadable blob
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.getElementById('downloadLink');
+        downloadLink.href = url;
+
+        // Suggest a file name
+        const safeFilename = filename.replace(/\s+/g, '_').replace(/\.(mp3|mp4)$/i, '.txt');
+        downloadLink.download = safeFilename;
+
+        // Show the link
+        downloadLink.style.display = 'block';
+        downloadLink.innerText = `Download ${safeFilename}`;
+      } else {
+        document.getElementById('downloadLink').style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
