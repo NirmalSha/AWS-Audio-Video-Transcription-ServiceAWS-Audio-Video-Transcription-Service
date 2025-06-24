@@ -1,0 +1,37 @@
+import json
+import boto3
+import urllib.parse
+import os
+
+s3 = boto3.client('s3')
+
+def lambda_handler(event, context):
+    try:
+        # Get the JSON file location
+        bucket = event['Records'][0]['s3']['bucket']['name']
+        key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
+
+        # Read the transcription JSON file
+        response = s3.get_object(Bucket=bucket, Key=key)
+        transcript_json = json.loads(response['Body'].read())
+
+        # Extract transcript text
+        transcript_text = transcript_json['results']['transcripts'][0]['transcript']
+
+        # Extract original file name from job name
+        base_name = os.path.basename(key).replace('.json', '')
+        original_filename = "_".join(base_name.split("_")[:-1]) + ".txt"  # Remove uuid part and add .txt
+
+        # Upload the .txt file
+        s3.put_object(
+            Bucket=bucket,
+            Key=original_filename,
+            Body=transcript_text.encode('utf-8'),
+            ContentType='text/plain'
+        )
+
+        print(f"Converted {key} → {original_filename} and uploaded.")
+
+    except Exception as e:
+        print(f"Error processing file: {str(e)}")
+        raise e
