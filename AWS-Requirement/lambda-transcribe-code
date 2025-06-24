@@ -1,0 +1,35 @@
+import boto3
+import urllib.parse
+import uuid
+import os
+
+transcribe = boto3.client('transcribe')
+
+def lambda_handler(event, context):
+    # Extract uploaded file details
+    bucket = event['Records'][0]['s3']['bucket']['name']
+    key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
+
+    # Generate a unique transcription job name using filename
+    filename_wo_ext = os.path.splitext(os.path.basename(key))[0]
+    sanitized = filename_wo_ext.replace(" ", "_").replace(".", "_").replace("/", "_")
+    job_id = str(uuid.uuid4())[:8]
+    job_name = f"{sanitized}_{job_id}"
+
+    media_uri = f"s3://{bucket}/{key}"
+    output_bucket = "transcript-output-bucket-aws-transcribe"
+
+    try:
+        transcribe.start_transcription_job(
+            TranscriptionJobName=job_name,
+            LanguageCode='en-US',
+            MediaFormat=key.split('.')[-1],
+            Media={'MediaFileUri': media_uri},
+            OutputBucketName=output_bucket,
+            OutputKey=f"{job_name}.json"
+        )
+        print(f"Started transcription job: {job_name}")
+
+    except Exception as e:
+        print(f"Error starting transcription: {str(e)}")
+        raise e
