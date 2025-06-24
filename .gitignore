@@ -1,0 +1,35 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables (keep secrets out of repo)
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker Compose override files (local environment-specific)
+docker-compose.override.yml
+
+# Docker related
+**/Dockerfile*
+**/docker-compose.override.yml
+
+# Optional: build output (if you build frontend, etc.)
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.temp
